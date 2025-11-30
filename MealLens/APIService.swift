@@ -1,51 +1,82 @@
-import UIKit // THIS LINE MUST BE PRESENT
+import UIKit
 
 struct APIService {
     static let apiKey = "99bb50579200b84bc93806308f63801f"
     static let appId = "58192088"
     
     static func uploadImage(_ image: UIImage, completion: @escaping (Int?) -> Void) {
-        guard let url = URL(string: "https://api.nutritionix.com/v1/analyze") else {
+        // Nutritionix v2 endpoint for natural language nutrients
+        guard let url = URL(string: "https://trackapi.nutritionix.com/v2/natural/nutrients") else {
             completion(nil)
             return
         }
         
-        // Convert image to Data (JPEG format)
-        guard let imageData = image.jpegData(compressionQuality: 0.7) else {
-            completion(nil)
-            return
-        }
-        
-        // Create the request
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         
-        // Set headers
+        // Set headers for v2 API
         request.setValue(appId, forHTTPHeaderField: "x-app-id")
         request.setValue(apiKey, forHTTPHeaderField: "x-app-key")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Create multipart form data
-        let boundary = "Boundary-\(UUID().uuidString)"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        // For demo purposes, using a generic query
+        // In production, you'd want to use image recognition first
+        let body: [String: Any] = [
+            "query": "1 meal"
+        ]
         
-        var body = Data()
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(nil)
+            return
+        }
         
-        // Add image data
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"image\"; filename=\"meal.jpg\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-        body.append(imageData)
-        body.append("\r\n".data(using: .utf8)!)
-        
-        // Close boundary
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
-        request.httpBody = body
+        request.httpBody = jsonData
         
         // Send request
         URLSession.shared.dataTask(with: request) { data, response, error in
-            // Handle response here (same as before)
-            // ... [rest of your existing code]
+            // Check for errors
+            if let error = error {
+                print("Network error: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            // Check HTTP response
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("Invalid response")
+                completion(nil)
+                return
+            }
+            
+            print("Status code: \(httpResponse.statusCode)")
+            
+            // Parse response data
+            guard let data = data else {
+                print("No data received")
+                completion(nil)
+                return
+            }
+            
+            // Print raw response for debugging
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("Response: \(jsonString)")
+            }
+            
+            // Parse JSON
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let foods = json["foods"] as? [[String: Any]],
+                   let firstFood = foods.first,
+                   let calories = firstFood["nf_calories"] as? Double {
+                    completion(Int(calories))
+                } else {
+                    print("Could not parse calories from response")
+                    completion(nil)
+                }
+            } catch {
+                print("JSON parsing error: \(error.localizedDescription)")
+                completion(nil)
+            }
         }.resume()
     }
 }
