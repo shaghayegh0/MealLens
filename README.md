@@ -1,18 +1,13 @@
 # MealLens – Calorie Journal
 
-A clean, offline iOS calorie tracking app. No API needed — fully manual, fully private.
+A clean, offline iOS calorie tracking app. 
 
 ## Setup
 
-1. Copy all Swift files from this zip into your Xcode project's MealLens source folder
-2. In Xcode, delete: `ContentView.swift`, `APIService.swift`, `ClaudeVisionService.swift`
-3. Keep: `CameraView.swift` (updated version included)
-4. Replace: `MealLensApp.swift` with the new version
+1. Copy all Swift files 
 5. Clean build: ⌘+Shift+K, then Run ▶
 
 ## File Structure
-
-Place files into Xcode groups exactly matching this layout:
 
 ```
 MealLens/ (source group)
@@ -47,8 +42,4 @@ MealLens/ (source group)
 - 100% offline — no API, no account needed
 - Dark mode only, warm terracotta design
 
-## Notes
 
-- Daily goal is hardcoded to 2000 kcal — search for `let goal = 2000` to change it
-- Charts require iOS 16+ (your project targets iOS 18, so you're fine)
-- No external packages needed
